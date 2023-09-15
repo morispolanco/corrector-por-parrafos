@@ -1,7 +1,6 @@
 import streamlit as st
 import csv
 import openai
-from docx import Document
 
 # Configuramos el diseño de la página
 st.set_page_config(layout="wide")
@@ -33,8 +32,8 @@ else:
         # Convertimos el objeto CSV en una lista de filas
         filas = list(archivo_csv)
 
-        # Creamos un documento de Word
-        doc = Document()
+        # Creamos una lista para almacenar los resultados corregidos
+        resultados = []
 
         # Iteramos sobre las filas del archivo CSV
         for fila in filas:
@@ -45,7 +44,7 @@ else:
             correccion = openai.Completion.create(
                 engine="text-davinci-003",
                 prompt=texto,
-                max_tokens=200,
+                max_tokens=100,
                 n=1,
                 stop=None,
                 temperature=0.7,
@@ -57,12 +56,16 @@ else:
             # Obtenemos el texto corregido
             texto_corregido = correccion.choices[0].text
 
-            # Agregamos el texto corregido al documento de Word
-            doc.add_paragraph(texto_corregido)
+            # Agregamos el texto corregido a la lista de resultados
+            resultados.append([texto, texto_corregido])
 
-        # Guardamos el documento de Word
-        doc.save("resultado.docx")
+        # Guardamos los resultados en un archivo CSV
+        with open("resultado.csv", "w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerows(resultados)
 
-        # Descargamos el archivo DOCX
-        with open("resultado.docx", "rb") as file:
+        # Descargamos el archivo CSV
+        with open("resultado.csv", "rb") as file:
             st.download_button("Descargar resultado", file)
+
+E
