@@ -49,8 +49,8 @@ else:
                 stop=None,
                 temperature=0.7,
                 top_p=None,
-                frequency_penalty=None,
-                presence_penalty=None
+                frequency_penalty=0,
+                presence_penalty=0
             )
 
             # Obtenemos el texto corregido
