@@ -12,21 +12,25 @@ if not api_key:
     st.warning("Please enter a valid API key to continue.")
 else:
     openai.api_key = api_key
-    # Continuar con el resto del código que utiliza la clave de API
 
-# Agregamos un título al principio
-st.title('Corrector gramatical y de puntuación')
+    # Agregamos un título al principio
+    st.title('Corrector gramatical y de puntuación')
 
-# Agregamos información de instrucciones
-st.write('Suba un archivo .CSV con las frases o textos que desea corregir.')
+    # Agregamos información de instrucciones
+    st.write('Suba un archivo .CSV con las frases o textos que desea corregir.')
 
-# Pedimos al usuario que suba el archivo CSV
-archivo = st.file_uploader('Cargar archivo CSV', type=['csv'])
+    # Pedimos al usuario que suba el archivo CSV
+    archivo = st.file_uploader('Cargar archivo CSV', type=['csv'])
 
-if archivo:
-    # Leemos el archivo CSV
-    reader = csv.reader(archivo)
-    filas = list(reader)
+    if archivo:
+        # Leemos el archivo CSV en modo de texto
+        reader = csv.reader(archivo.decode('utf-8').splitlines())
+        filas = list(reader)
+
+        # Resto del código...
+
+
+
 
     # Agregamos un botón para iniciar la corrección
     if st.button('Corregir'):
