@@ -5,10 +5,10 @@ from docx import Document
 import openai
 
 # Configurar la clave de la API de OpenAI
-api_key = st.sidebar.text_input("Enter your OpenAI API key", type="password")
+api_key = st.sidebar.text_input("Ingresa tu clave de API de OpenAI", type="password")
 
 if not api_key:
-    st.warning("Please enter a valid API key to continue.")
+    st.warning("Por favor, ingresa una clave de API válida para continuar.")
 else:
     openai.api_key = api_key
 
@@ -51,7 +51,7 @@ def main():
 
         doc = create_docx(df)
         st.write("Archivo DOCX generado:")
-        st.download_button("Descargar archivo DOCX", data=doc, file_name="corrected_file.docx")
+        st.download_button("Descargar archivo DOCX", data=doc, file_name="archivo_corregido.docx")
 
 if __name__ == "__main__":
     main()
