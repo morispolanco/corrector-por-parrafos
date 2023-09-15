@@ -1,59 +1,60 @@
 import streamlit as st
-import pandas as pd
-import docx
-from docx import Document
+import csv
 import openai
 
+# Configuramos el diseño de la página
+st.set_page_config(layout="wide")
+
 # Configurar la clave de la API de OpenAI
-api_key = st.sidebar.text_input("Ingresa tu clave de API de OpenAI", type="password")
+api_key = st.sidebar.text_input("Enter your OpenAI API key", type="password")
 
 if not api_key:
-    st.warning("Por favor, ingresa una clave de API válida para continuar.")
+    st.warning("Please enter a valid API key to continue.")
 else:
     openai.api_key = api_key
+    # Continuar con el resto del código que utiliza la clave de API
 
-def correct_paragraphs(df):
-    corrected_paragraphs = []
-    for paragraph in df['paragraph']:
-        response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=paragraph,
-            max_tokens=250,
-            n=1,
-            stop=None,
-            temperature=0.7
-        )
-        corrected_paragraph = response.choices[0].text.strip()
-        corrected_paragraphs.append(corrected_paragraph)
-    df['corrected_paragraph'] = corrected_paragraphs
-    return df
+# Agregamos un título al principio
+st.title('Corrector gramatical y de puntuación')
 
-def create_docx(df):
-    doc = Document()
-    for paragraph in df['corrected_paragraph']:
-        doc.add_paragraph(paragraph)
-    return doc
+# Agregamos información de instrucciones
+st.write('Suba un archivo .CSV con las frases o textos que desea corregir.')
 
-def main():
-    st.title("Corrección de errores gramaticales y de puntuación")
-    st.write("Esta aplicación utiliza OpenAI Text Da Vinci 0.0.3 para corregir los errores gramaticales y de puntuación en el contenido de cada fila de un archivo CSV.")
+# Pedimos al usuario que suba el archivo CSV
+archivo = st.file_uploader('Cargar archivo CSV', type=['csv'])
 
-    file = st.file_uploader("Sube un archivo CSV", type=["csv"])
+if archivo:
+    # Leemos el archivo CSV
+    reader = csv.reader(archivo)
+    filas = list(reader)
 
-    if file is not None:
-        df = pd.read_csv(file)
-        st.write("Párrafos originales:")
-        st.dataframe(df)
+    # Agregamos un botón para iniciar la corrección
+    if st.button('Corregir'):
+        # Utilizamos la API de GPT-3 para corregir cada fila
+        resultados = []
+        for i, fila in enumerate(filas):
+            texto = fila[0]  # Suponemos que el texto se encuentra en la primera columna
 
-        df = correct_paragraphs(df)
-        st.write("Párrafos corregidos:")
-        st.dataframe(df)
+            # Utilizamos la API de OpenAI para corregir la gramática y la puntuación
+            response = openai.Completion.create(
+                engine="text-davinci-003",
+                prompt=texto,
+                temperature=0,
+                max_tokens=512,
+                n=1,
+                stop=None,
+                timeout=5
+            )
+            correccion = response.choices[0].text.strip()
 
-        doc = create_docx(df)
-        doc_file = "archivo_corregido.docx"
-        doc.save(doc_file)
-        st.write("Descargar archivo DOCX:")
-        st.download_button("Descargar archivo DOCX", data=doc_file, file_name=doc_file)
+            # Agregamos la corrección a la lista de resultados
+            resultados.append(correccion)
 
-if __name__ == "__main__":
-    main()
+        # Guardamos los resultados en un archivo CSV
+        with open('correcciones.csv', 'w', newline='') as archivo_csv:
+            writer = csv.writer(archivo_csv)
+            writer.writerow(['Texto corregido'])
+            writer.writerows(resultados)
+
+        # Mostramos un botón para descargar el archivo CSV
+        st.download_button('Descargar correcciones', 'correcciones.csv', 'Click aquí para descargar el archivo CSV')
