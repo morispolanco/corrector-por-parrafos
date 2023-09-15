@@ -28,6 +28,12 @@ def correct_paragraphs(df):
     df['corrected_paragraph'] = corrected_paragraphs
     return df
 
+def create_docx(df):
+    doc = Document()
+    for paragraph in df['corrected_paragraph']:
+        doc.add_paragraph(paragraph)
+    return doc
+
 def main():
     st.title("Corrección de errores gramaticales y de puntuación")
     st.write("Esta aplicación utiliza OpenAI Text Da Vinci 0.0.3 para corregir los errores gramaticales y de puntuación en el contenido de cada fila de un archivo CSV.")
@@ -43,9 +49,11 @@ def main():
         st.write("Párrafos corregidos:")
         st.dataframe(df)
 
-        csv_file = df.to_csv(index=False)
-        st.write("Descargar archivo CSV:")
-        st.download_button("Descargar archivo CSV", data=csv_file, file_name="archivo_corregido.csv")
+        doc = create_docx(df)
+        doc_file = "archivo_corregido.docx"
+        doc.save(doc_file)
+        st.write("Descargar archivo DOCX:")
+        st.download_button("Descargar archivo DOCX", data=doc_file, file_name=doc_file)
 
 if __name__ == "__main__":
     main()
