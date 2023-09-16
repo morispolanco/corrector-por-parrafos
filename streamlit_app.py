@@ -2,18 +2,16 @@
 import streamlit as st
 import docx
 import openai
-import pandas as pd
-import spacy
+import csv
 from docx import Document
 
-# Define function to convert DOCX to pandas dataframe
-def docx_to_df(file):
+# Define function to convert DOCX to CSV
+def docx_to_csv(file, csv_file):
     doc = docx.Document(file)
-    data = []
-    for para in doc.paragraphs:
-        data.append(para.text)
-    df = pd.DataFrame(data, columns=["texto"])
-    return df
+    with open(csv_file, 'w', newline='') as file:
+        writer = csv.writer(file)
+        for para in doc.paragraphs:
+            writer.writerow([para.text])
 
 # Configurar la clave de la API de OpenAI
 api_key = st.sidebar.text_input("Enter your OpenAI API key", type="password")
@@ -22,25 +20,25 @@ if not api_key:
     st.warning("Please enter a valid API key to continue.")
 else:
     openai.api_key = api_key
+
 # Streamlit App
-st.title('Correción de gramática y estilo para DOCX usando DaVinci-003')
+st.title('DaVinci-003 Grammar and Style Correction for DOCX')
 
-uploaded_file = st.file_uploader("Sube un archivo DOCX", type='docx')
-
-# Load Spacy model
-nlp = spacy.load("es_core_news_sm")
+uploaded_file = st.file_uploader("Upload DOCX file", type='docx')
 
 if uploaded_file is not None and st.button('Corregir'):
     with st.spinner("Corrigiendo..."):
-        df = docx_to_df(uploaded_file)
-        corrected_document = Document() # Este documento contiene el texto corregido
-        for index, row in df.iterrows():
-            doc = nlp(row['texto'])
-            sentences = [sent.string.strip() for sent in doc.sents]
-            for sentence in sentences:
+        # Converting DOCX to CSV
+        csv_file = 'input.csv'
+        docx_to_csv(uploaded_file, csv_file)
+        
+        corrected_document = Document() # This document will contain corrected text
+        with open(csv_file, newline='') as file:
+            reader = csv.reader(file)
+            for row in reader:
                 response = openai.Completion.create(
                     engine="text-davinci-003",
-                    prompt=sentence,
+                    prompt=row[0],
                     temperature=0.5,
                     max_tokens=100 
                 )
