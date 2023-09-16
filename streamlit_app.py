@@ -3,6 +3,7 @@ import docx2txt
 import docx
 import csv
 import openai
+import base64
 
 # Configuramos el diseño de la página
 st.set_page_config(layout="wide")
@@ -65,6 +66,9 @@ else:
             # Guardamos el documento corregido en un archivo .docx
             doc_corregido.save("resultado.docx")
 
-            # Mostramos el enlace para descargar el archivo DOCX
-            st.subheader("Archivo DOCX generado:")
-            st.markdown(get_binary_file_downloader_html("resultado.docx", "Descargar resultado DOCX"), unsafe_allow_html=True)
+            # Generamos el enlace de descarga del archivo DOCX
+            with open("resultado.docx", "rb") as file:
+                b64 = base64.b64encode(file.read()).decode()
+                href = f'<a href="data:application/octet-stream;base64,{b64}" download="resultado.docx">Descargar resultado DOCX</a>'
+                st.subheader("Archivo DOCX generado:")
+                st.markdown(href, unsafe_allow_html=True)
