@@ -1,9 +1,7 @@
 import streamlit as st
-import docx2txt
-import docx
-import csv
+import pandas as pd
 import openai
-import base64
+import csv
 
 # Configuramos el diseño de la página
 st.set_page_config(layout="wide")
@@ -17,32 +15,35 @@ else:
     openai.api_key = api_key
 
     # Agregamos un título al principio
-    st.title('Convertir DOC a CSV y corregir gramática y estilo')
+    st.title('Corregir filas de un archivo CSV')
 
     # Agregamos información de instrucciones
-    st.write('Suba un archivo de documento (.docx) que desea convertir a CSV y corregir.')
+    st.write('Suba un archivo CSV que desea corregir.')
 
-    # Pedimos al usuario que suba el archivo de documento
-    archivo = st.file_uploader('Cargar archivo de documento', type=['docx'])
+    # Pedimos al usuario que suba el archivo CSV
+    archivo = st.file_uploader('Cargar archivo CSV', type=['csv'])
 
     if archivo:
-        # Leemos el contenido del archivo de documento
-        contenido = docx2txt.process(archivo)
+        # Leemos el contenido del archivo CSV
+        df = pd.read_csv(archivo)
 
-        # Dividimos el contenido en chunks delimitados por el carácter de párrafo
-        chunks = contenido.split('\n\n')
-
-        # Creamos una lista para almacenar los chunks corregidos
-        chunks_corregidos = []
+        # Creamos una lista para almacenar las filas corregidas
+        filas_corregidas = []
 
         # Agregamos un botón para iniciar la corrección
         if st.button("Corregir"):
-            # Iteramos sobre los chunks
-            for chunk in chunks:
-                # Corregimos el chunk utilizando la API de OpenAI
+            # Iteramos sobre las filas del DataFrame
+            for index, row in df.iterrows():
+                # Obtenemos la fila como una lista de valores
+                fila = row.tolist()
+
+                # Convertimos la fila en una cadena separada por comas
+                fila_str = ','.join(str(valor) for valor in fila)
+
+                # Corregimos la fila utilizando la API de OpenAI
                 correccion = openai.Completion.create(
                     engine="text-davinci-003",
-                    prompt=chunk,
+                    prompt=fila_str,
                     max_tokens=100,
                     n=1,
                     stop=None,
@@ -52,23 +53,24 @@ else:
                     presence_penalty=0.0
                 )
 
-                # Obtenemos el chunk corregido
-                chunk_corregido = correccion.choices[0].text.strip()
+                # Obtenemos la fila corregida
+                fila_corregida = correccion.choices[0].text.strip()
 
-                # Agregamos el chunk corregido a la lista
-                chunks_corregidos.append(chunk_corregido)
+                # Convertimos la fila corregida en una lista de valores
+                fila_corregida_lista = fila_corregida.split(',')
 
-            # Creamos un nuevo archivo DOCX con los chunks corregidos
-            doc_corregido = docx.Document()
-            for chunk_corregido in chunks_corregidos:
-                doc_corregido.add_paragraph(chunk_corregido)
+                # Agregamos la fila corregida a la lista
+                filas_corregidas.append(fila_corregida_lista)
 
-            # Guardamos el documento corregido en un archivo .docx
-            doc_corregido.save("resultado.docx")
+            # Creamos un nuevo DataFrame con las filas corregidas
+            df_corregido = pd.DataFrame(filas_corregidas)
 
-            # Generamos el enlace de descarga del archivo DOCX
-            with open("resultado.docx", "rb") as file:
+            # Guardamos el DataFrame corregido en un archivo CSV
+            df_corregido.to_csv("resultado.csv", index=False)
+
+            # Generamos el enlace de descarga del archivo CSV
+            with open("resultado.csv", "rb") as file:
                 b64 = base64.b64encode(file.read()).decode()
-                href = f'<a href="data:application/octet-stream;base64,{b64}" download="resultado.docx">Descargar resultado DOCX</a>'
-                st.subheader("Archivo DOCX generado:")
+                href = f'<a href="data:text/csv;base64,{b64}" download="resultado.csv">Descargar resultado CSV</a>'
+                st.subheader("Archivo CSV generado:")
                 st.markdown(href, unsafe_allow_html=True)
