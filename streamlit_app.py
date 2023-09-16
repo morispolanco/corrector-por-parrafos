@@ -1,17 +1,11 @@
-# Import required Libraries
 import streamlit as st
+import docx2txt
 import docx
-import openai
 import csv
-from docx import Document
+import openai
 
-# Define function to convert DOCX to CSV
-def docx_to_csv(file, csv_file):
-    doc = docx.Document(file)
-    with open(csv_file, 'w', newline='') as file:
-        writer = csv.writer(file)
-        for para in doc.paragraphs:
-            writer.writerow([para.text])
+# Configuramos el diseño de la página
+st.set_page_config(layout="wide")
 
 # Configurar la clave de la API de OpenAI
 api_key = st.sidebar.text_input("Enter your OpenAI API key", type="password")
@@ -21,28 +15,56 @@ if not api_key:
 else:
     openai.api_key = api_key
 
-# Streamlit App
-st.title('DaVinci-003 Grammar and Style Correction for DOCX')
+    # Agregamos un título al principio
+    st.title('Convertir DOC a CSV y corregir gramática y estilo')
 
-uploaded_file = st.file_uploader("Upload DOCX file", type='docx')
+    # Agregamos información de instrucciones
+    st.write('Suba un archivo de documento (.docx) que desea convertir a CSV y corregir.')
 
-if uploaded_file is not None and st.button('Corregir'):
-    with st.spinner("Corrigiendo..."):
-        # Converting DOCX to CSV
-        csv_file = 'input.csv'
-        docx_to_csv(uploaded_file, csv_file)
-        
-        corrected_document = Document() # This document will contain corrected text
-        with open(csv_file, newline='') as file:
-            reader = csv.reader(file)
-            for row in reader:
-                response = openai.Completion.create(
+    # Pedimos al usuario que suba el archivo de documento
+    archivo = st.file_uploader('Cargar archivo de documento', type=['docx'])
+
+    if archivo:
+        # Leemos el contenido del archivo de documento
+        contenido = docx2txt.process(archivo)
+
+        # Dividimos el contenido en chunks delimitados por el carácter de párrafo
+        chunks = contenido.split('\n\n')
+
+        # Creamos una lista para almacenar los chunks corregidos
+        chunks_corregidos = []
+
+        # Agregamos un botón para iniciar la corrección
+        if st.button("Corregir"):
+            # Iteramos sobre los chunks
+            for chunk in chunks:
+                # Corregimos el chunk utilizando la API de OpenAI
+                correccion = openai.Completion.create(
                     engine="text-davinci-003",
-                    prompt=row[0],
-                    temperature=0.5,
-                    max_tokens=100 
+                    prompt=chunk,
+                    max_tokens=100,
+                    n=1,
+                    stop=None,
+                    temperature=0.7,
+                    top_p=1.0,
+                    frequency_penalty=0.0,
+                    presence_penalty=0.0
                 )
-                corrected_document.add_paragraph(response.choices[0].text.strip())
-        corrected_document.save("corrected.docx")
-        st.success('Se ha completado la corrección del documento.')
-        st.download_button('Descarga el documento corregido DOCX', 'corrected.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+
+                # Obtenemos el chunk corregido
+                chunk_corregido = correccion.choices[0].text.strip()
+
+                # Agregamos el chunk corregido a la lista
+                chunks_corregidos.append(chunk_corregido)
+
+            # Creamos un nuevo archivo DOCX con los chunks corregidos
+            doc_corregido = docx.Document()
+            for chunk_corregido in chunks_corregidos:
+                doc_corregido.add_paragraph(chunk_corregido)
+
+            # Guardamos el documento corregido en un archivo .docx
+            doc_corregido.save("resultado.docx")
+
+            # Mostramos el enlace para descargar el archivo DOCX
+            st.subheader("Archivo DOCX generado:")
+            st.markdown("[Descargar resultado DOCX](resultado.docx)")
