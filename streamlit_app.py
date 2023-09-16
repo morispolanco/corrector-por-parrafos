@@ -52,7 +52,7 @@ else:
                 )
 
                 # Obtenemos el párrafo corregido
-                parrafo_corregido = correccion.choices[0].text
+                parrafo_corregido = correccion.choices[0].text.strip()
 
                 # Agregamos el párrafo corregido a la lista
                 parrafos_corregidos.append(parrafo_corregido)
