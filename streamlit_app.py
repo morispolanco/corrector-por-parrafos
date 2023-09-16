@@ -67,4 +67,4 @@ else:
 
             # Mostramos el enlace para descargar el archivo DOCX
             st.subheader("Archivo DOCX generado:")
-            st.markdown("[Descargar resultado DOCX](resultado.docx)")
+            st.markdown(get_binary_file_downloader_html("resultado.docx", "Descargar resultado DOCX"), unsafe_allow_html=True)
