@@ -15,7 +15,7 @@ else:
     openai.api_key = api_key
 
     # Agregamos un título al principio
-    st.title('Corrector gramatical y de puntuación')
+    st.title('Corrector gramatical y de estilo')
 
     # Agregamos información de instrucciones
     st.write('Suba un archivo de documento (.docx) que desea corregir.')
@@ -36,32 +36,39 @@ else:
         # Creamos una variable para almacenar el contenido corregido
         contenido_corregido = ""
 
-        # Iteramos sobre los párrafos
-        for parrafo in parrafos:
-            # Corregimos el párrafo utilizando la API de OpenAI
-            correccion = openai.Completion.create(
-                engine="text-davinci-003",
-                prompt=parrafo,
-                max_tokens=200,
-                temperature=0.3
-            )
+        # Agregamos un botón para iniciar la corrección
+        if st.button("Empezar la corrección gramatical y de estilo"):
+            # Iteramos sobre los párrafos
+            for parrafo in parrafos:
+                # Corregimos el párrafo utilizando la API de OpenAI
+                correccion = openai.Completion.create(
+                    engine="text-davinci-003",
+                    prompt=parrafo,
+                    max_tokens=100,
+                    n=1,
+                    stop=None,
+                    temperature=0.7,
+                    top_p=1.0,
+                    frequency_penalty=0.0,
+                    presence_penalty=0.0
+                )
 
-            # Obtenemos el párrafo corregido
-            parrafo_corregido = correccion.choices[0].text
+                # Obtenemos el párrafo corregido
+                parrafo_corregido = correccion.choices[0].text
 
-            # Agregamos el párrafo corregido al documento
-            doc_corregido.add_paragraph(parrafo_corregido)
+                # Agregamos el párrafo corregido al documento
+                doc_corregido.add_paragraph(parrafo_corregido)
 
-            # Agregamos el párrafo corregido al contenido corregido
-            contenido_corregido += parrafo_corregido + "\n"
+                # Agregamos el párrafo corregido al contenido corregido
+                contenido_corregido += parrafo_corregido + "\n"
 
-        # Mostramos el contenido corregido
-        st.subheader("Contenido corregido:")
-        st.text_area("Resultado", value=contenido_corregido, height=400)
+            # Mostramos el contenido corregido
+            st.subheader("Contenido corregido:")
+            st.text_area("Resultado", value=contenido_corregido, height=400)
 
-        # Guardamos el documento corregido en un archivo .docx
-        doc_corregido.save("resultado.docx")
+            # Guardamos el documento corregido en un archivo .docx
+            doc_corregido.save("resultado.docx")
 
-        # Descargamos el archivo .docx
-        with open("resultado.docx", "rb") as file:
-            st.download_button("Descargar resultado", file, file_name="resultado.docx")
+            # Descargamos el archivo .docx
+            with open("resultado.docx", "rb") as file:
+                st.download_button("Descargar resultado", file, file_name="resultado.docx")
