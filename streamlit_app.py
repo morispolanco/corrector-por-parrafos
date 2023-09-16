@@ -33,19 +33,17 @@ else:
         # Dividimos el contenido en párrafos
         parrafos = contenido.split('\n')
 
+        # Creamos una variable para almacenar el contenido corregido
+        contenido_corregido = ""
+
         # Iteramos sobre los párrafos
         for parrafo in parrafos:
             # Corregimos el párrafo utilizando la API de OpenAI
             correccion = openai.Completion.create(
                 engine="text-davinci-003",
                 prompt=parrafo,
-                max_tokens=100,
-                n=1,
-                stop=None,
-                temperature=0.7,
-                top_p=None,
-                frequency_penalty=0,
-                presence_penalty=0
+                max_tokens=200,
+                temperature=0.3
             )
 
             # Obtenemos el párrafo corregido
@@ -54,10 +52,16 @@ else:
             # Agregamos el párrafo corregido al documento
             doc_corregido.add_paragraph(parrafo_corregido)
 
+            # Agregamos el párrafo corregido al contenido corregido
+            contenido_corregido += parrafo_corregido + "\n"
+
+        # Mostramos el contenido corregido
+        st.subheader("Contenido corregido:")
+        st.text_area("Resultado", value=contenido_corregido, height=400)
+
         # Guardamos el documento corregido en un archivo .docx
         doc_corregido.save("resultado.docx")
 
         # Descargamos el archivo .docx
         with open("resultado.docx", "rb") as file:
             st.download_button("Descargar resultado", file, file_name="resultado.docx")
-
