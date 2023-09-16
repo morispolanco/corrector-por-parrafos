@@ -1,5 +1,6 @@
 import streamlit as st
-import csv
+import docx2txt
+import docx
 import openai
 
 # Configuramos el diseño de la página
@@ -17,33 +18,27 @@ else:
     st.title('Corrector gramatical y de puntuación')
 
     # Agregamos información de instrucciones
-    st.write('Suba un archivo .CSV con las frases o textos que desea corregir.')
+    st.write('Suba un archivo de documento (.docx) que desea corregir.')
 
-    # Pedimos al usuario que suba el archivo CSV
-    archivo = st.file_uploader('Cargar archivo CSV', type=['csv'])
+    # Pedimos al usuario que suba el archivo de documento
+    archivo = st.file_uploader('Cargar archivo de documento', type=['docx'])
 
     if archivo:
-        # Leemos el contenido del archivo y lo decodificamos como UTF-8
-        contenido = archivo.read().decode('utf-8')
+        # Leemos el contenido del archivo de documento
+        contenido = docx2txt.process(archivo)
 
-        # Creamos un objeto StringIO para leer el contenido como un archivo CSV
-        archivo_csv = csv.reader(contenido.splitlines())
+        # Creamos un objeto Document para almacenar el contenido corregido
+        doc_corregido = docx.Document()
 
-        # Convertimos el objeto CSV en una lista de filas
-        filas = list(archivo_csv)
+        # Dividimos el contenido en párrafos
+        parrafos = contenido.split('\n')
 
-        # Creamos una lista para almacenar los resultados corregidos
-        resultados = []
-
-        # Iteramos sobre las filas del archivo CSV
-        for fila in filas:
-            # Obtenemos el texto de la fila
-            texto = fila[0]
-
-            # Corregimos el texto utilizando la API de OpenAI
+        # Iteramos sobre los párrafos
+        for parrafo in parrafos:
+            # Corregimos el párrafo utilizando la API de OpenAI
             correccion = openai.Completion.create(
                 engine="text-davinci-003",
-                prompt=texto,
+                prompt=parrafo,
                 max_tokens=100,
                 n=1,
                 stop=None,
@@ -53,19 +48,16 @@ else:
                 presence_penalty=0
             )
 
-            # Obtenemos el texto corregido
-            texto_corregido = correccion.choices[0].text
+            # Obtenemos el párrafo corregido
+            parrafo_corregido = correccion.choices[0].text
 
-            # Agregamos el texto corregido a la lista de resultados
-            resultados.append([texto, texto_corregido])
+            # Agregamos el párrafo corregido al documento
+            doc_corregido.add_paragraph(parrafo_corregido)
 
-        # Guardamos los resultados en un archivo CSV
-        with open("resultado.csv", "w", newline="", encoding="utf-8") as file:
-            writer = csv.writer(file)
-            writer.writerows(resultados)
+        # Guardamos el documento corregido en un archivo .docx
+        doc_corregido.save("resultado.docx")
 
-        # Descargamos el archivo CSV
-        with open("resultado.csv", "rb") as file:
-            st.download_button("Descargar resultado", file)
+        # Descargamos el archivo .docx
+        with open("resultado.docx", "rb") as file:
+            st.download_button("Descargar resultado", file, file_name="resultado.docx")
 
-E
