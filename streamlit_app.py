@@ -1,11 +1,18 @@
+# Import required Libraries
 import streamlit as st
-import docx2txt
 import docx
-import csv
 import openai
+import pandas as pd
+from docx import Document
 
-# Configuramos el diseño de la página
-st.set_page_config(layout="wide")
+# Define function to convert DOCX to pandas dataframe
+def docx_to_df(file):
+    doc = docx.Document(file)
+    data = []
+    for para in doc.paragraphs:
+        data.append(para.text)
+    df = pd.DataFrame(data, columns=["text"])
+    return df
 
 # Configurar la clave de la API de OpenAI
 api_key = st.sidebar.text_input("Enter your OpenAI API key", type="password")
@@ -15,66 +22,23 @@ if not api_key:
 else:
     openai.api_key = api_key
 
-    # Agregamos un título al principio
-    st.title('Convertir DOC a CSV y corregir gramática y estilo')
+# Streamlit App
+st.title('DaVinci-003 Grammar and Style Correction for DOCX')
 
-    # Agregamos información de instrucciones
-    st.write('Suba un archivo de documento (.docx) que desea convertir a CSV y corregir.')
+uploaded_file = st.file_uploader("Upload DOCX file", type='docx')
 
-    # Pedimos al usuario que suba el archivo de documento
-    archivo = st.file_uploader('Cargar archivo de documento', type=['docx'])
-
-    if archivo:
-        # Leemos el contenido del archivo de documento
-        contenido = docx2txt.process(archivo)
-
-        # Dividimos el contenido en párrafos
-        parrafos = contenido.split('\n')
-
-        # Creamos una lista para almacenar los párrafos corregidos
-        parrafos_corregidos = []
-
-        # Agregamos un botón para iniciar la corrección
-        if st.button("Corregir"):
-            # Iteramos sobre los párrafos
-            for parrafo in parrafos:
-                # Corregimos el párrafo utilizando la API de OpenAI
-                correccion = openai.Completion.create(
-                    engine="text-davinci-003",
-                    prompt=parrafo,
-                    max_tokens=100,
-                    n=1,
-                    stop=None,
-                    temperature=0.7,
-                    top_p=1.0,
-                    frequency_penalty=0.0,
-                    presence_penalty=0.0
-                )
-
-                # Obtenemos el párrafo corregido
-                parrafo_corregido = correccion.choices[0].text.strip()
-
-                # Agregamos el párrafo corregido a la lista
-                parrafos_corregidos.append(parrafo_corregido)
-
-            # Creamos un archivo CSV para almacenar los párrafos corregidos
-            with open("resultado.csv", "w", newline="", encoding="utf-8") as file:
-                writer = csv.writer(file)
-                writer.writerow(["Párrafo corregido"])
-                writer.writerows(zip(parrafos_corregidos))
-
-            # Mostramos el enlace para descargar el archivo CSV
-            st.subheader("Archivo CSV generado:")
-            st.markdown("[Descargar resultado CSV](resultado.csv)")
-
-            # Creamos un nuevo archivo DOC con los párrafos corregidos
-            doc_corregido = docx.Document()
-            for parrafo_corregido in parrafos_corregidos:
-                doc_corregido.add_paragraph(parrafo_corregido)
-
-            # Guardamos el documento corregido en un archivo .docx
-            doc_corregido.save("resultado.docx")
-
-            # Mostramos el enlace para descargar el archivo DOC
-            st.subheader("Archivo DOC generado:")
-            st.markdown("[Descargar resultado DOC](resultado.docx)")
+if uploaded_file is not None:
+    df = docx_to_df(uploaded_file)
+    corrected_document = Document() # This document will contain corrected text
+    for index, row in df.iterrows():
+        prompt=row['text']
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=prompt,
+            temperature=0.5,
+            max_tokens=150
+        )
+        corrected_document.add_paragraph(response.choices[0].text.strip())
+    corrected_document.save("corrected.docx")
+    st.success('Done writing corrected document.')
+    st.download_button('Download corrected DOCX', 'corrected.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
